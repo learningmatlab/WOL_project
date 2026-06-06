@@ -1,30 +1,50 @@
 /**
- * uni-app 全局样式变量
+ * 明亮炫彩全息主题
  */
-$uni-color-primary: #007aff;
-$uni-color-success: #4cd964;
-$uni-color-warning: #f0ad4e;
-$uni-color-error: #dd524d;
 
-$uni-text-color: #333333;
-$uni-text-color-inverse: #ffffff;
-$uni-text-color-grey: #999999;
-$uni-text-color-placeholder: #cccccc;
+// 全息彩虹色系
+$holo-pink: #FF6B9D;
+$holo-purple: #C084FC;
+$holo-blue: #60A5FA;
+$holo-cyan: #22D3EE;
+$holo-green: #34D399;
+$holo-yellow: #FBBF24;
+$holo-orange: #FB923C;
 
-$uni-bg-color: #f8f8f8;
-$uni-bg-color-grey: #f0f0f0;
+// 主色 - 活力橙
+$primary: #F97316;
+$primary-light: #FDBA74;
+$primary-dark: #EA580C;
 
-$uni-border-color: #e5e5e5;
+// 背景 - 暖白带彩
+$bg-page: #FFF8F0;
+$bg-card: #FFFFFF;
+$bg-input: #FFF5EB;
 
-$uni-font-size-sm: 24rpx;
-$uni-font-size-base: 28rpx;
-$uni-font-size-lg: 32rpx;
+// 文字
+$text-primary: #1E1B4B;
+$text-secondary: #5B21B6;
+$text-tertiary: #7C3AED;
+$text-dim: #A78BFA;
 
-$uni-spacing-sm: 16rpx;
-$uni-spacing-base: 24rpx;
-$uni-spacing-lg: 32rpx;
+// 边框
+$border-card: rgba(249, 115, 22, 0.15);
 
-$uni-radius-sm: 4rpx;
-$uni-radius-base: 6rpx;
-$uni-radius-lg: 12rpx;
-$uni-radius-circle: 50%;
+// 渐变
+$gradient-sunset: linear-gradient(135deg, #FF6B9D 0%, #C084FC 25%, #60A5FA 50%, #22D3EE 75%, #34D399 100%);
+$gradient-warm: linear-gradient(135deg, #FBBF24 0%, #FB923C 50%, #FF6B9D 100%);
+$gradient-card: linear-gradient(145deg, #FFFFFF 0%, #FFF1F2 30%, #FDF4FF 60%, #EFF6FF 100%);
+
+// 圆角
+$radius-sm: 12rpx;
+$radius-md: 20rpx;
+$radius-lg: 28rpx;
+
+// 字号
+$font-xs: 20rpx;
+$font-sm: 24rpx;
+$font-md: 28rpx;
+$font-lg: 32rpx;
+$font-xl: 36rpx;
+$font-2xl: 48rpx;
+$font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;

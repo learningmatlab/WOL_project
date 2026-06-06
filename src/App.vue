@@ -16,6 +16,13 @@ onHide(() => {
 
 <style>
 page {
-  background-color: #f8f8f8;
+  background-color: #FFF8F0;
+  color: #1E1B4B;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  display: none;
 }
 </style>

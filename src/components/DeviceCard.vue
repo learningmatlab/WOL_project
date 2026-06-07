@@ -276,6 +276,17 @@ async function handleEdit() {
   
   // 等待展开动画完成
   await new Promise(resolve => setTimeout(resolve, 500))
+  
+  // 触发编辑事件（跳转到编辑页面）
+  emit('edit', props.device)
+  
+  // 跳转后重置状态
+  setTimeout(() => {
+    isEditing.value = false
+    isExpandedFullscreen.value = false
+    isFlipped.value = false
+    cardRect.value = null
+  }, 100)
 }
 
 // 从编辑页面返回
@@ -340,7 +351,7 @@ function handleWakeClick() {
 
   position: relative; 
   border-radius: 32rpx; 
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx; /* 调整卡片间距 */
   overflow: visible; /* 改为 visible 以支持 3D 翻转 */
   transform-style: preserve-3d; /* 保持 3D 空间 */
   backface-visibility: hidden;

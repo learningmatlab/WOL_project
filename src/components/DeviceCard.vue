@@ -219,18 +219,24 @@ async function handleEdit() {
     if (res?.[0]) cardRect.value = res[0]
   })
   
-  // 阶段一：翻转
+  // 翻转 400ms，200ms 后同步展开 350ms，总共约 550ms
   isFlipped.value = true
-  await new Promise(resolve => setTimeout(resolve, 600))
   
-  // 阶段二：展开铺满
-  isExpandedFullscreen.value = true
-  await new Promise(resolve => setTimeout(resolve, 500))
+  // 翻转一半时开始展开
+  setTimeout(() => {
+    isExpandedFullscreen.value = true
+  }, 200)
   
-  // 跳转编辑页面
+  // 等翻转结束
+  await new Promise(resolve => setTimeout(resolve, 400))
+  
+  // 等展开结束（350ms - 已过的200ms = 150ms）
+  await new Promise(resolve => setTimeout(resolve, 150))
+  
+  // 跳转
   emit('edit', props.device)
   
-  // 跳转后重置
+  // 重置
   setTimeout(() => {
     isFlipped.value = false
     isExpandedFullscreen.value = false
@@ -333,6 +339,7 @@ function handleWakeClick() {
 
 /* 翻转状态 */
 .card--flipped {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   transform: perspective(2000rpx) rotateY(180deg) !important;
 }
 
@@ -389,7 +396,7 @@ function handleWakeClick() {
 
 /* 全屏展开动画 */
 .card--expanded {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: top, left, width, height;
   border-radius: 0 !important;
   margin: 0 !important;

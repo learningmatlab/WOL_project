@@ -388,11 +388,15 @@ function handleWakeClick() {
 .card-face--front {
   transform: rotateY(0deg);
   z-index: 2;
+  /* 不设置 position，由父容器自然撑高 */
 }
 
 .card-face--back {
+  position: absolute; /* 背面叠加在正面之上 */
+  inset: 0;
   transform: rotateY(180deg);
   z-index: 1;
+  display: flex; /* 让 back-content 撑满 */
 }
 
 /* 翻转状态 */
@@ -974,11 +978,13 @@ function handleWakeClick() {
 
 /* ===== 背面编辑表单 ===== */
 .back-content {
-  position: relative; /* 改为 relative */
-  min-height: 600rpx; /* 最小高度 */
+  width: 100%;
+  min-height: 500rpx; /* 撑满背面 */
+  flex: 1;
   padding: 60rpx 40rpx;
   display: flex;
   flex-direction: column;
+  border-radius: 32rpx;
   background: linear-gradient(135deg, rgba(48, 48, 96, 0.85), rgba(32, 32, 64, 0.95));
   backdrop-filter: blur(40rpx) saturate(180%);
   -webkit-backdrop-filter: blur(40rpx) saturate(180%);

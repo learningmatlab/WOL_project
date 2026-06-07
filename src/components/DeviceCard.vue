@@ -5,77 +5,113 @@
       'card--active': isOperating, 
       'card--editing': isEditing,
       'card--returning': isReturning,
-      'card--expanded': isExpandedFullscreen
+      'card--expanded': isExpandedFullscreen,
+      'card--flipped': isFlipped
     }"
     :style="[dynamicVars, cardInlineStyle]"
     @touchstart="onTouchStart"
     @touchmove.stop.prevent="onTouchMove"
     @touchend="onTouchEnd"
   >
-    <!-- 彩虹条纹全息层 -->
-    <view class="card__rainbow" />
-    <!-- 银河星空粒子层 -->
-    <view class="card__galaxy" />
-    <!-- 旋转棱镜全息层 -->
-    <view class="card__prism" />
-    <!-- 闪光粒子层 -->
-    <view class="card__sparkle" />
-    <!-- 光晕跟随层 -->
-    <view class="card__glare" />
-    <!-- 光影追踪层（径向渐变） -->
-    <view class="card__lighttrack" :style="lightTrackStyle" />
-    <!-- 边缘彩虹线 -->
-    <view class="card__edge" />
+    <!-- 卡片正面 -->
+    <view class="card-face card-face--front">
+      <!-- 彩虹条纹全息层 -->
+      <view class="card__rainbow" />
+      <!-- 银河星空粒子层 -->
+      <view class="card__galaxy" />
+      <!-- 旋转棱镜全息层 -->
+      <view class="card__prism" />
+      <!-- 闪光粒子层 -->
+      <view class="card__sparkle" />
+      <!-- 光晕跟随层 -->
+      <view class="card__glare" />
+      <!-- 光影追踪层（径向渐变） -->
+      <view class="card__lighttrack" :style="lightTrackStyle" />
+      <!-- 边缘彩虹线 -->
+      <view class="card__edge" />
 
-    <!-- 内容区 -->
-    <view class="card__content">
-      <!-- 卡片头部：只展示名称和状态 -->
-      <view class="card-header" @tap="toggleExpand">
-        <view class="header-left">
-          <view class="power-icon">⏻</view>
-          <text class="card-name">{{ device.name }}</text>
+      <!-- 内容区 -->
+      <view class="card__content">
+        <!-- 卡片头部：只展示名称和状态 -->
+        <view class="card-header" @tap="toggleExpand">
+          <view class="header-left">
+            <view class="power-icon">⏻</view>
+            <text class="card-name">{{ device.name }}</text>
+          </view>
+          <view class="card-badge" :class="badgeClass">
+            <view class="badge-dot" :class="dotClass" />
+          </view>
         </view>
-        <view class="card-badge" :class="badgeClass">
-          <view class="badge-dot" :class="dotClass" />
+        
+        <!-- 展开区域：详细信息 -->
+        <view class="card-expand" :class="{ 'card-expand--visible': isExpanded }">
+          <view class="info-grid">
+            <view class="info-capsule info-capsule--mac">
+              <text class="info-icon">📡</text>
+              <text class="info-label">MAC</text>
+              <text class="info-value">{{ device.macAddress }}</text>
+            </view>
+            <view class="info-capsule info-capsule--esp">
+              <text class="info-icon">🔧</text>
+              <text class="info-label">ESP</text>
+              <text class="info-value">{{ device.esp32Ip }}</text>
+            </view>
+          </view>
+          
+          <view v-if="statusText" class="card-status">
+            <view class="status-bar" />
+            <text class="status-msg">{{ statusText }}</text>
+          </view>
+          
+          <view class="card-actions" @touchmove.stop>
+            <button 
+              class="act-btn act-btn--wake" 
+              :class="{ 'act-btn--active': isWakeActive, 'act-btn--processing': isOperating }"
+              :disabled="isOperating" 
+              @tap.stop="handleWakeClick"
+            >
+              <view class="btn-shine" />
+              <view class="btn-progress" :style="{ width: wakeProgress + '%' }" />
+              <text class="act-icon">⏻</text>
+              <text class="btn-text">{{ wakeButtonText }}</text>
+            </button>
+            <view class="act-row">
+              <button class="act-btn act-btn--edit" @tap.stop="handleEdit">编辑</button>
+              <button class="act-btn act-btn--del" @tap.stop="handleDelete">删除</button>
+            </view>
+          </view>
         </view>
       </view>
-      
-      <!-- 展开区域：详细信息 -->
-      <view class="card-expand" :class="{ 'card-expand--visible': isExpanded }">
-        <view class="info-grid">
-          <view class="info-capsule info-capsule--mac">
-            <text class="info-icon">📡</text>
-            <text class="info-label">MAC</text>
-            <text class="info-value">{{ device.macAddress }}</text>
-          </view>
-          <view class="info-capsule info-capsule--esp">
-            <text class="info-icon">🔧</text>
-            <text class="info-label">ESP</text>
-            <text class="info-value">{{ device.esp32Ip }}</text>
+    </view>
+
+    <!-- 卡片背面（编辑表单） -->
+    <view class="card-face card-face--back">
+      <view class="back-content">
+        <view class="back-header">
+          <text class="back-title">编辑设备</text>
+          <view class="back-close" @tap="handleBackFromEdit">
+            <text class="close-icon">✕</text>
           </view>
         </view>
         
-        <view v-if="statusText" class="card-status">
-          <view class="status-bar" />
-          <text class="status-msg">{{ statusText }}</text>
+        <view class="form-group">
+          <text class="form-label">设备名称</text>
+          <input class="form-input" v-model="editForm.name" placeholder="输入设备名称" />
         </view>
         
-        <view class="card-actions" @touchmove.stop>
-          <button 
-            class="act-btn act-btn--wake" 
-            :class="{ 'act-btn--active': isWakeActive, 'act-btn--processing': isOperating }"
-            :disabled="isOperating" 
-            @tap.stop="handleWakeClick"
-          >
-            <view class="btn-shine" />
-            <view class="btn-progress" :style="{ width: wakeProgress + '%' }" />
-            <text class="act-icon">⏻</text>
-            <text class="btn-text">{{ wakeButtonText }}</text>
-          </button>
-          <view class="act-row">
-            <button class="act-btn act-btn--edit" @tap.stop="handleEdit">编辑</button>
-            <button class="act-btn act-btn--del" @tap.stop="handleDelete">删除</button>
-          </view>
+        <view class="form-group">
+          <text class="form-label">MAC 地址</text>
+          <input class="form-input" v-model="editForm.macAddress" placeholder="00:00:00:00:00:00" />
+        </view>
+        
+        <view class="form-group">
+          <text class="form-label">ESP32 IP</text>
+          <input class="form-input" v-model="editForm.esp32Ip" placeholder="192.168.1.100" />
+        </view>
+        
+        <view class="form-actions">
+          <button class="form-btn form-btn--cancel" @tap="handleBackFromEdit">取消</button>
+          <button class="form-btn form-btn--save" @tap="handleSave">保存</button>
         </view>
       </view>
     </view>
@@ -108,7 +144,24 @@ const isWakeActive = ref(false) // 按钮点击激活状态
 const wakeProgress = ref(0) // 按钮进度条
 const isExpanded = ref(false) // 卡片展开状态
 const isExpandedFullscreen = ref(false) // 全屏展开状态
+const isFlipped = ref(false) // 卡片翻转状态
 const cardRect = ref<any>(null) // 卡片原始位置信息
+
+// 编辑表单
+const editForm = ref({
+  name: '',
+  macAddress: '',
+  esp32Ip: ''
+})
+
+// 初始化编辑表单
+function initEditForm() {
+  editForm.value = {
+    name: props.device.name,
+    macAddress: props.device.macAddress,
+    esp32Ip: props.device.esp32Ip
+  }
+}
 
 const fromCenter = computed(() => Math.min(1, Math.sqrt((py.value - 50) ** 2 + (px.value - 50) ** 2) / 50))
 const fromTop = computed(() => py.value / 100)
@@ -208,8 +261,12 @@ async function handleEdit() {
     }
   })
   
+  // 初始化编辑表单
+  initEditForm()
+  
   // 阶段一：翻转动画
   isEditing.value = true
+  isFlipped.value = true
   
   // 等待翻转完成
   await new Promise(resolve => setTimeout(resolve, 600))
@@ -217,18 +274,25 @@ async function handleEdit() {
   // 阶段二：展开铺满
   isExpandedFullscreen.value = true
   
-  // 等待展开动画完成后触发编辑
+  // 等待展开动画完成
   await new Promise(resolve => setTimeout(resolve, 500))
-  
-  // 触发编辑事件（跳转到编辑页面）
-  emit('edit', props.device)
-  
-  // 跳转后重置状态
+}
+
+// 从编辑页面返回
+function handleBackFromEdit() {
+  isFlipped.value = false
   setTimeout(() => {
-    isEditing.value = false
     isExpandedFullscreen.value = false
+    isEditing.value = false
     cardRect.value = null
-  }, 100)
+  }, 500)
+}
+
+// 保存编辑
+function handleSave() {
+  // TODO: 调用保存 API
+  uni.showToast({ title: '保存成功', icon: 'success' })
+  handleBackFromEdit()
 }
 
 function handleDelete() {
@@ -277,31 +341,60 @@ function handleWakeClick() {
   position: relative; 
   border-radius: 32rpx; 
   margin-bottom: 32rpx;
-  overflow: hidden; 
-  transform-style: preserve-3d;
+  overflow: visible; /* 改为 visible 以支持 3D 翻转 */
+  transform-style: preserve-3d; /* 保持 3D 空间 */
   backface-visibility: hidden;
   
   /* 玻璃拟态升级：半透明 + 强模糊 */
-  background: linear-gradient(135deg, rgba(48, 48, 96, 0.65), rgba(32, 32, 64, 0.75));
-  backdrop-filter: blur(30rpx) saturate(150%);
-  -webkit-backdrop-filter: blur(30rpx) saturate(150%);
-  
-  /* 边缘光：1px 半透明渐变边框 */
-  border: 1.5rpx solid rgba(255, 255, 255, 0.18);
-  
-  /* 多层阴影：内阴影 + 外阴影 */
-  box-shadow:
-    /* 左上角内阴影（高光） */
-    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.15),
-    inset -2rpx -2rpx 4rpx rgba(0, 0, 0, 0.2),
-    /* 外阴影（浮动效果） */
-    0 8rpx 32rpx rgba(0, 0, 0, 0.4),
-    0 16rpx 48rpx rgba(0, 0, 0, 0.25),
-    0 0 0 1rpx rgba(255, 255, 255, 0.08);
+  background: transparent; /* 改为透明，由正面/背面控制背景 */
   
   transform: perspective(1000rpx) rotateX(var(--ry)) rotateY(var(--rx));
   transition: transform 0.15s ease-out, box-shadow 0.3s ease;
   will-change: transform;
+}
+
+/* 卡片正面/背面 */
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden; /* 隐藏背面 */
+  border-radius: 32rpx;
+  overflow: hidden;
+  
+  /* 玻璃拟态升级 */
+  background: linear-gradient(135deg, rgba(48, 48, 96, 0.65), rgba(32, 32, 64, 0.75));
+  backdrop-filter: blur(30rpx) saturate(150%);
+  -webkit-backdrop-filter: blur(30rpx) saturate(150%);
+  border: 1.5rpx solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.15),
+    inset -2rpx -2rpx 4rpx rgba(0, 0, 0, 0.2),
+    0 8rpx 32rpx rgba(0, 0, 0, 0.4),
+    0 16rpx 48rpx rgba(0, 0, 0, 0.25),
+    0 0 0 1rpx rgba(255, 255, 255, 0.08);
+}
+
+.card-face--front {
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.card-face--back {
+  transform: rotateY(180deg);
+  z-index: 1;
+}
+
+/* 翻转状态 */
+.card--flipped {
+  transform: perspective(2000rpx) rotateY(180deg) !important;
+}
+
+.card--flipped .card-face--front {
+  transform: rotateY(0deg);
+}
+
+.card--flipped .card-face--back {
+  transform: rotateY(0deg); /* 背面朝外 */
 }
 
 .card--active {

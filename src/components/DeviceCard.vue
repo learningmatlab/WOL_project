@@ -4,9 +4,10 @@
     :class="{ 
       'card--active': isOperating, 
       'card--editing': isEditing,
-      'card--returning': isReturning 
+      'card--returning': isReturning,
+      'card--expanded': isExpandedFullscreen
     }"
-    :style="dynamicVars"
+    :style="[dynamicVars, cardInlineStyle]"
     @touchstart="onTouchStart"
     @touchmove.stop.prevent="onTouchMove"
     @touchend="onTouchEnd"
@@ -106,6 +107,8 @@ const isEditing = ref(false) // 编辑动画状态
 const isWakeActive = ref(false) // 按钮点击激活状态
 const wakeProgress = ref(0) // 按钮进度条
 const isExpanded = ref(false) // 卡片展开状态
+const isExpandedFullscreen = ref(false) // 全屏展开状态
+const cardRect = ref<any>(null) // 卡片原始位置信息
 
 const fromCenter = computed(() => Math.min(1, Math.sqrt((py.value - 50) ** 2 + (px.value - 50) ** 2) / 50))
 const fromTop = computed(() => py.value / 100)
@@ -156,6 +159,21 @@ const wakeButtonText = computed(() => {
   return '一键开机+解锁'
 })
 
+// 卡片内联样式（用于全屏展开时的位置计算）
+const cardInlineStyle = computed(() => {
+  if (!isExpandedFullscreen.value || !cardRect.value) return {}
+  
+  return {
+    position: 'fixed' as const,
+    top: `${cardRect.value.top}px`,
+    left: `${cardRect.value.left}px`,
+    width: `${cardRect.value.width}px`,
+    height: `${cardRect.value.height}px`,
+    zIndex: 999,
+    margin: '0'
+  }
+})
+
 function toggleExpand() {
   isExpanded.value = !isExpanded.value
 }
@@ -177,22 +195,40 @@ function onTouchMove(e: any) {
 }
 function onTouchEnd() { touching.value = false; px.value = 50; py.value = 50 }
 
-function handleEdit() {
+async function handleEdit() {
   // 如果已经在编辑中，忽略
   if (isEditing.value) return
   
-  // 启动编辑动画
+  // 获取卡片当前位置信息
+  const query = uni.createSelectorQuery()
+  query.select('.card').boundingClientRect()
+  query.exec((res: any) => {
+    if (res?.[0]) {
+      cardRect.value = res[0]
+    }
+  })
+  
+  // 阶段一：翻转动画
   isEditing.value = true
   
-  // 等待动画完成后触发跳转
+  // 等待翻转完成
+  await new Promise(resolve => setTimeout(resolve, 600))
+  
+  // 阶段二：展开铺满
+  isExpandedFullscreen.value = true
+  
+  // 等待展开动画完成后触发编辑
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
+  // 触发编辑事件（跳转到编辑页面）
+  emit('edit', props.device)
+  
+  // 跳转后重置状态
   setTimeout(() => {
-    emit('edit', props.device)
-    
-    // 跳转后立即重置状态
-    setTimeout(() => {
-      isEditing.value = false
-    }, 100)
-  }, 600)
+    isEditing.value = false
+    isExpandedFullscreen.value = false
+    cardRect.value = null
+  }, 100)
 }
 
 function handleDelete() {
@@ -309,6 +345,18 @@ function handleWakeClick() {
     transform: perspective(1000rpx) rotateY(0deg) scale3d(1, 1, 1);
     opacity: 1;
   }
+}
+
+/* 全屏展开动画 */
+.card--expanded {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: top, left, width, height;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.card--expanded .card__content {
+  padding: 60rpx 40rpx;
 }
 
 /* ===== 彩虹条纹全息层 ===== */

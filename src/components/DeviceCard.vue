@@ -21,26 +21,30 @@
     <view class="card__sparkle" />
     <!-- 光晕跟随层 -->
     <view class="card__glare" />
+    <!-- 光影追踪层（径向渐变） -->
+    <view class="card__lighttrack" :style="lightTrackStyle" />
     <!-- 边缘彩虹线 -->
     <view class="card__edge" />
 
     <!-- 内容区 -->
     <view class="card__content">
       <view class="card-top">
-        <view class="card-badge" :class="isOperating ? 'badge--on' : 'badge--off'">
-          <view class="badge-dot" :class="isOperating ? 'dot--on' : 'dot--off'" />
-          <text class="badge-text">{{ isOperating ? 'ACTIVE' : 'STANDBY' }}</text>
+        <view class="card-badge" :class="badgeClass">
+          <view class="badge-dot" :class="dotClass" />
+          <text class="badge-text">{{ statusText }}</text>
         </view>
         <text class="card-name">{{ device.name }}</text>
       </view>
       <view class="card-info">
-        <view class="info-cell">
-          <text class="info-key">MAC</text>
-          <text class="info-val">{{ device.macAddress }}</text>
+        <view class="info-capsule">
+          <text class="info-icon">📡</text>
+          <text class="info-label">MAC</text>
+          <text class="info-value">{{ device.macAddress }}</text>
         </view>
-        <view class="info-cell">
-          <text class="info-key">ESP</text>
-          <text class="info-val">{{ device.esp32Ip }}</text>
+        <view class="info-capsule">
+          <text class="info-icon">🔧</text>
+          <text class="info-label">ESP</text>
+          <text class="info-value">{{ device.esp32Ip }}</text>
         </view>
       </view>
       <view v-if="statusText" class="card-status">
@@ -48,9 +52,16 @@
         <text class="status-msg">{{ statusText }}</text>
       </view>
       <view class="card-actions" @touchmove.stop>
-        <button class="act-btn act-btn--wake" :disabled="isOperating" @tap.stop="$emit('wake', device)">
+        <button 
+          class="act-btn act-btn--wake" 
+          :class="{ 'act-btn--active': isWakeActive, 'act-btn--processing': isOperating }"
+          :disabled="isOperating" 
+          @tap.stop="handleWakeClick"
+        >
+          <view class="btn-shine" />
+          <view class="btn-progress" :style="{ width: wakeProgress + '%' }" />
           <text class="act-icon">⏻</text>
-          <text>{{ isOperating ? 'PROCESSING...' : '一键开机+解锁' }}</text>
+          <text class="btn-text">{{ isOperating ? 'PROCESSING...' : '一键开机+解锁' }}</text>
         </button>
         <view class="act-row">
           <button class="act-btn act-btn--edit" @tap.stop="handleEdit">编辑</button>
@@ -83,6 +94,8 @@ const px = ref(50)
 const py = ref(50)
 const touching = ref(false)
 const isEditing = ref(false) // 编辑动画状态
+const isWakeActive = ref(false) // 按钮点击激活状态
+const wakeProgress = ref(0) // 按钮进度条
 
 const fromCenter = computed(() => Math.min(1, Math.sqrt((py.value - 50) ** 2 + (px.value - 50) ** 2) / 50))
 const fromTop = computed(() => py.value / 100)
@@ -102,6 +115,28 @@ const dynamicVars = computed(() => {
     --rx:${rotX.value}deg;
     --ry:${rotY.value}deg;
   `
+})
+
+// 光影追踪样式
+const lightTrackStyle = computed(() => {
+  return {
+    '--lx': `${px.value}%`,
+    '--ly': `${py.value}%`,
+    '--lo': touching.value ? 0.4 : 0.15
+  }
+})
+
+// 状态标签样式（环境感知）
+const badgeClass = computed(() => {
+  if (props.isOperating) return 'badge--waking'
+  if (props.statusText.includes('成功') || props.statusText.includes('完成')) return 'badge--online'
+  return 'badge--standby'
+})
+
+const dotClass = computed(() => {
+  if (props.isOperating) return 'dot--waking'
+  if (props.statusText.includes('成功') || props.statusText.includes('完成')) return 'dot--online'
+  return 'dot--standby'
 })
 
 function onTouchStart() { touching.value = true }
@@ -145,6 +180,29 @@ function handleDelete() {
     success(res) { if (res.confirm) emit('delete', props.device) },
   })
 }
+
+function handleWakeClick() {
+  if (props.isOperating) return
+  
+  // 激活按钮点击状态
+  isWakeActive.value = true
+  wakeProgress.value = 0
+  
+  // 模拟进度条动画
+  const interval = setInterval(() => {
+    wakeProgress.value += 10
+    if (wakeProgress.value >= 100) {
+      clearInterval(interval)
+      setTimeout(() => {
+        isWakeActive.value = false
+        wakeProgress.value = 0
+      }, 300)
+    }
+  }, 100)
+  
+  // 触发唤醒事件
+  emit('wake', props.device)
+}
 </script>
 
 <style scoped>
@@ -159,24 +217,45 @@ function handleDelete() {
   --rx: 0deg;
   --ry: 0deg;
 
-  position: relative; border-radius: 28rpx; margin-bottom: 28rpx;
-  overflow: hidden; transform-style: preserve-3d;
+  position: relative; 
+  border-radius: 32rpx; 
+  margin-bottom: 32rpx;
+  overflow: hidden; 
+  transform-style: preserve-3d;
   backface-visibility: hidden;
-  /* 更明亮的深色底 */
-  background: #303060;
-  border: 2rpx solid rgba(255, 255, 255, 0.2);
+  
+  /* 玻璃拟态升级：半透明 + 强模糊 */
+  background: linear-gradient(135deg, rgba(48, 48, 96, 0.65), rgba(32, 32, 64, 0.75));
+  backdrop-filter: blur(30rpx) saturate(150%);
+  -webkit-backdrop-filter: blur(30rpx) saturate(150%);
+  
+  /* 边缘光：1px 半透明渐变边框 */
+  border: 1.5rpx solid rgba(255, 255, 255, 0.18);
+  
+  /* 多层阴影：内阴影 + 外阴影 */
   box-shadow:
-    0 10rpx 40rpx rgba(0, 0, 0, 0.35),
-    0 0 0 1rpx rgba(255, 255, 255, 0.12),
-    inset 0 0 80rpx rgba(255, 255, 255, 0.08);
+    /* 左上角内阴影（高光） */
+    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.15),
+    inset -2rpx -2rpx 4rpx rgba(0, 0, 0, 0.2),
+    /* 外阴影（浮动效果） */
+    0 8rpx 32rpx rgba(0, 0, 0, 0.4),
+    0 16rpx 48rpx rgba(0, 0, 0, 0.25),
+    0 0 0 1rpx rgba(255, 255, 255, 0.08);
+  
   transform: perspective(1000rpx) rotateX(var(--ry)) rotateY(var(--rx));
-  transition: transform 0.1s ease-out, box-shadow 0.3s;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
   will-change: transform;
 }
 
 .card--active {
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 15rpx 50rpx rgba(0, 0, 0, 0.45), 0 0 0 1rpx rgba(255, 255, 255, 0.18), inset 0 0 100rpx rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 
+    inset 2rpx 2rpx 4rpx rgba(255, 255, 255, 0.2),
+    inset -2rpx -2rpx 4rpx rgba(0, 0, 0, 0.25),
+    0 12rpx 40rpx rgba(0, 0, 0, 0.5),
+    0 20rpx 60rpx rgba(0, 0, 0, 0.35),
+    0 0 0 1rpx rgba(255, 255, 255, 0.12);
+  transform: perspective(1000rpx) rotateX(var(--ry)) rotateY(var(--rx)) scale(1.02);
 }
 
 /* 点击编辑时的翻转放大过渡动画 */
@@ -317,7 +396,7 @@ function handleDelete() {
   transition: opacity 0.3s ease;
 }
 
-/* ===== 光晕跟随层 ===== */
+/* 光晕跟随层 */
 .card__glare {
   position: absolute; inset: 0;
   pointer-events: none; border-radius: 28rpx;
@@ -336,6 +415,23 @@ function handleDelete() {
 
   filter: brightness(1) contrast(1) saturate(1);
   transition: opacity 0.3s ease;
+}
+
+/* 光影追踪层（径向渐变） */
+.card__lighttrack {
+  position: absolute; inset: 0;
+  pointer-events: none; border-radius: 28rpx;
+  opacity: var(--lo);
+  mix-blend-mode: overlay;
+  transition: opacity 0.3s ease;
+
+  background-image:
+    radial-gradient(
+      circle at var(--lx) var(--ly),
+      rgba(255, 255, 255, 0.25) 0%,
+      rgba(255, 255, 255, 0.1) 15%,
+      transparent 50%
+    );
 }
 
 /* ===== 边缘彩虹线 ===== */
@@ -359,46 +455,288 @@ function handleDelete() {
 .card__content { 
   position: relative; 
   z-index: 2; 
-  padding: 32rpx;
-  background: rgba(40, 40, 80, 0.2);
+  padding: 40rpx 36rpx;
+  background: transparent;
 }
 
-.card-top { display: flex; flex-direction: row; align-items: center; margin-bottom: 20rpx; }
-.card-badge { display: flex; flex-direction: row; align-items: center; padding: 6rpx 16rpx; border-radius: 20rpx; margin-right: 16rpx; }
-.badge--off { background: rgba(192, 132, 252, 0.25); }
-.badge--on { background: rgba(255, 107, 157, 0.3); }
-.badge-dot { width: 12rpx; height: 12rpx; border-radius: 50%; margin-right: 8rpx; }
-.dot--off { background-color: #F0F0F0; }
-.dot--on { background: linear-gradient(135deg, #FF6B9D, #C084FC); box-shadow: 0 0 14rpx rgba(192, 132, 252, 0.7); }
-.badge-text { font-size: 18rpx; letter-spacing: 2rpx; font-family: 'SF Mono', 'Consolas', monospace; }
-.badge--off .badge-text { color: #DDD0FF; }
-.badge--on .badge-text { color: #FFA8C8; }
-.card-name { flex: 1; font-size: 34rpx; font-weight: 700; color: #FFFFFF; }
+.card-top { 
+  display: flex; 
+  flex-direction: row; 
+  align-items: center; 
+  margin-bottom: 28rpx;
+}
 
+.card-badge { 
+  display: flex; 
+  flex-direction: row; 
+  align-items: center; 
+  padding: 8rpx 18rpx; 
+  border-radius: 24rpx; 
+  margin-right: 18rpx; 
+  border: 1rpx solid;
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
+}
+
+/* STANDBY - 灰色 */
+.badge--standby { 
+  background: rgba(128, 128, 128, 0.15); 
+  border-color: rgba(128, 128, 128, 0.3); 
+}
+.badge--standby .badge-text { color: #B0B0B0; }
+.badge--standby .dot--standby { background-color: #A0A0A0; }
+
+/* WAKING - 亮橙色呼吸灯 */
+.badge--waking { 
+  background: rgba(255, 165, 0, 0.2); 
+  border-color: rgba(255, 165, 0, 0.4);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+.badge--waking .badge-text { color: #FFB84D; }
+.dot--waking { 
+  background: #FFA500; 
+  box-shadow: 0 0 14rpx rgba(255, 165, 0, 0.8);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+/* ONLINE - 荧光绿 */
+.badge--online { 
+  background: rgba(0, 255, 136, 0.15); 
+  border-color: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 20rpx rgba(0, 255, 136, 0.2);
+}
+.badge--online .badge-text { color: #00FF88; }
+.dot--online { 
+  background: #00FF88; 
+  box-shadow: 0 0 14rpx rgba(0, 255, 136, 0.9);
+}
+
+/* 呼吸灯动画 */
+@keyframes badgePulse {
+  0%, 100% { 
+    background: rgba(255, 165, 0, 0.2); 
+    border-color: rgba(255, 165, 0, 0.4);
+  }
+  50% { 
+    background: rgba(255, 165, 0, 0.35); 
+    border-color: rgba(255, 165, 0, 0.6);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 100% { 
+    box-shadow: 0 0 14rpx rgba(255, 165, 0, 0.8);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 24rpx rgba(255, 165, 0, 1);
+    transform: scale(1.2);
+  }
+}
+
+.badge-dot { width: 12rpx; height: 12rpx; border-radius: 50%; margin-right: 8rpx; transition: all 0.3s ease; }
+.badge-text { font-size: 18rpx; letter-spacing: 2rpx; font-family: 'SF Mono', 'Consolas', monospace; font-weight: 600; }
+.card-name { flex: 1; font-size: 34rpx; font-weight: 700; color: #FFFFFF; text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3); }
+
+/* 胶囊状信息槽位 */
 .card-info {
-  padding: 16rpx 20rpx;
-  background: rgba(255, 255, 255, 0.15); border-radius: 14rpx;
-  margin-bottom: 20rpx; border: 1rpx solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
 }
-.info-cell { display: flex; flex-direction: row; align-items: center; padding: 5rpx 0; }
-.info-key { font-size: 20rpx; color: #E0C8FF; width: 56rpx; letter-spacing: 1rpx; font-family: 'SF Mono', 'Consolas', monospace; }
-.info-val { font-size: 22rpx; color: #FFFFFF; font-family: 'SF Mono', 'Consolas', monospace; letter-spacing: 1rpx; }
+
+.info-capsule {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 14rpx 20rpx;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
+  transition: all 0.2s ease;
+}
+
+.info-capsule:active {
+  background: rgba(0, 0, 0, 0.35);
+  transform: scale(0.98);
+}
+
+.info-icon { 
+  font-size: 24rpx; 
+  margin-right: 10rpx; 
+  opacity: 0.85;
+  filter: saturate(0.8);
+}
+
+.info-label { 
+  font-size: 20rpx; 
+  color: #A090C0; 
+  min-width: 64rpx;
+  letter-spacing: 2rpx; 
+  font-family: 'SF Mono', 'Consolas', monospace; 
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.info-value { 
+  flex: 1;
+  font-size: 22rpx; 
+  color: #FFFFFF; 
+  font-family: 'Courier New', 'SF Mono', 'Consolas', monospace; 
+  letter-spacing: 1.5rpx; 
+  font-weight: 600;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+}
 
 .card-status {
-  display: flex; flex-direction: row; align-items: center;
-  padding: 14rpx 20rpx; background: rgba(255, 107, 157, 0.2);
-  border-radius: 14rpx; margin-bottom: 20rpx;
+  display: flex; 
+  flex-direction: row; 
+  align-items: center;
+  padding: 16rpx 24rpx; 
+  background: rgba(255, 107, 157, 0.15);
+  border-radius: 16rpx; 
+  margin-bottom: 24rpx;
+  border: 1rpx solid rgba(255, 107, 157, 0.2);
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
 }
-.status-bar { width: 6rpx; height: 28rpx; border-radius: 3rpx; background: linear-gradient(180deg, #FF6B9D, #C084FC); box-shadow: 0 0 14rpx rgba(192, 132, 252, 0.6); margin-right: 16rpx; }
-.status-msg { font-size: 24rpx; color: #FFFFFF; letter-spacing: 1rpx; }
+.status-bar { 
+  width: 6rpx; 
+  height: 32rpx; 
+  border-radius: 3rpx; 
+  background: linear-gradient(180deg, #FF6B9D, #C084FC); 
+  box-shadow: 0 0 16rpx rgba(192, 132, 252, 0.7); 
+  margin-right: 18rpx;
+}
+.status-msg { 
+  font-size: 24rpx; 
+  color: #FFFFFF; 
+  letter-spacing: 1rpx;
+  font-weight: 500;
+}
 
 .card-actions { display: flex; flex-direction: column; gap: 12rpx; }
 .act-row { display: flex; flex-direction: row; gap: 12rpx; }
-.act-btn { flex: 1; height: 76rpx; display: flex; align-items: center; justify-content: center; border-radius: 14rpx; border: none; padding: 0; margin: 0; font-size: 26rpx; }
+.act-btn { 
+  flex: 1; 
+  height: 76rpx; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  border-radius: 14rpx; 
+  border: none; 
+  padding: 0; 
+  margin: 0; 
+  font-size: 26rpx;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.1s ease;
+}
+.act-btn:active {
+  transform: scale(0.96);
+}
 .act-btn::after { border: none; }
 .act-icon { font-size: 30rpx; margin-right: 10rpx; }
-.act-btn--wake { background: linear-gradient(135deg, #FF6B9D 0%, #C084FC 50%, #60A5FA 100%); color: #FFFFFF; font-weight: 600; box-shadow: 0 4rpx 20rpx rgba(192, 132, 252, 0.4); }
-.act-btn--wake[disabled] { background: linear-gradient(135deg, #888 0%, #777 50%, #666 100%); color: rgba(255, 255, 255, 0.6); box-shadow: none; }
-.act-btn--edit { background: rgba(192, 132, 252, 0.25); border: 1rpx solid rgba(192, 132, 252, 0.35); color: #E0C8FF; }
-.act-btn--del { background: rgba(255, 107, 157, 0.25); border: 1rpx solid rgba(255, 107, 157, 0.35); color: #FFA8C8; }
+
+/* 进度条 */
+.btn-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));
+  transition: width 0.1s linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 流光特效 */
+.btn-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.act-btn--active .btn-shine {
+  animation: shineSlide 1s ease-in-out;
+}
+
+@keyframes shineSlide {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.act-btn--wake { 
+  background: linear-gradient(135deg, #FF6B9D 0%, #C084FC 50%, #60A5FA 100%); 
+  color: #FFFFFF; 
+  font-weight: 600; 
+  box-shadow: 0 4rpx 20rpx rgba(192, 132, 252, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.act-btn--wake::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.act-btn--wake:active:not([disabled])::before {
+  transform: translateX(100%);
+}
+
+.act-btn--wake[disabled] { 
+  background: linear-gradient(135deg, #888 0%, #777 50%, #666 100%); 
+  color: rgba(255, 255, 255, 0.6); 
+  box-shadow: none;
+}
+
+.act-btn--processing {
+  animation: btnPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+  0%, 100% {
+    box-shadow: 0 4rpx 20rpx rgba(192, 132, 252, 0.4);
+  }
+  50% {
+    box-shadow: 0 4rpx 30rpx rgba(192, 132, 252, 0.7);
+  }
+}
+.act-btn--edit { 
+  background: rgba(192, 132, 252, 0.25); 
+  border: 1rpx solid rgba(192, 132, 252, 0.35); 
+  color: #E0C8FF;
+}
+.act-btn--edit:active {
+  background: rgba(192, 132, 252, 0.35);
+}
+.act-btn--del { 
+  background: rgba(255, 107, 157, 0.25); 
+  border: 1rpx solid rgba(255, 107, 157, 0.35); 
+  color: #FFA8C8;
+}
+.act-btn--del:active {
+  background: rgba(255, 107, 157, 0.35);
+}
 </style>

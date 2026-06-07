@@ -28,44 +28,53 @@
 
     <!-- 内容区 -->
     <view class="card__content">
-      <view class="card-top">
+      <!-- 卡片头部：只展示名称和状态 -->
+      <view class="card-header" @tap="toggleExpand">
+        <view class="header-left">
+          <view class="power-icon">⏻</view>
+          <text class="card-name">{{ device.name }}</text>
+        </view>
         <view class="card-badge" :class="badgeClass">
           <view class="badge-dot" :class="dotClass" />
-          <text class="badge-text">{{ statusText }}</text>
-        </view>
-        <text class="card-name">{{ device.name }}</text>
-      </view>
-      <view class="card-info">
-        <view class="info-capsule">
-          <text class="info-icon">📡</text>
-          <text class="info-label">MAC</text>
-          <text class="info-value">{{ device.macAddress }}</text>
-        </view>
-        <view class="info-capsule">
-          <text class="info-icon">🔧</text>
-          <text class="info-label">ESP</text>
-          <text class="info-value">{{ device.esp32Ip }}</text>
         </view>
       </view>
-      <view v-if="statusText" class="card-status">
-        <view class="status-bar" />
-        <text class="status-msg">{{ statusText }}</text>
-      </view>
-      <view class="card-actions" @touchmove.stop>
-        <button 
-          class="act-btn act-btn--wake" 
-          :class="{ 'act-btn--active': isWakeActive, 'act-btn--processing': isOperating }"
-          :disabled="isOperating" 
-          @tap.stop="handleWakeClick"
-        >
-          <view class="btn-shine" />
-          <view class="btn-progress" :style="{ width: wakeProgress + '%' }" />
-          <text class="act-icon">⏻</text>
-          <text class="btn-text">{{ isOperating ? 'PROCESSING...' : '一键开机+解锁' }}</text>
-        </button>
-        <view class="act-row">
-          <button class="act-btn act-btn--edit" @tap.stop="handleEdit">编辑</button>
-          <button class="act-btn act-btn--del" @tap.stop="handleDelete">删除</button>
+      
+      <!-- 展开区域：详细信息 -->
+      <view class="card-expand" :class="{ 'card-expand--visible': isExpanded }">
+        <view class="info-grid">
+          <view class="info-capsule info-capsule--mac">
+            <text class="info-icon">📡</text>
+            <text class="info-label">MAC</text>
+            <text class="info-value">{{ device.macAddress }}</text>
+          </view>
+          <view class="info-capsule info-capsule--esp">
+            <text class="info-icon">🔧</text>
+            <text class="info-label">ESP</text>
+            <text class="info-value">{{ device.esp32Ip }}</text>
+          </view>
+        </view>
+        
+        <view v-if="statusText" class="card-status">
+          <view class="status-bar" />
+          <text class="status-msg">{{ statusText }}</text>
+        </view>
+        
+        <view class="card-actions" @touchmove.stop>
+          <button 
+            class="act-btn act-btn--wake" 
+            :class="{ 'act-btn--active': isWakeActive, 'act-btn--processing': isOperating }"
+            :disabled="isOperating" 
+            @tap.stop="handleWakeClick"
+          >
+            <view class="btn-shine" />
+            <view class="btn-progress" :style="{ width: wakeProgress + '%' }" />
+            <text class="act-icon">⏻</text>
+            <text class="btn-text">{{ wakeButtonText }}</text>
+          </button>
+          <view class="act-row">
+            <button class="act-btn act-btn--edit" @tap.stop="handleEdit">编辑</button>
+            <button class="act-btn act-btn--del" @tap.stop="handleDelete">删除</button>
+          </view>
         </view>
       </view>
     </view>
@@ -96,6 +105,7 @@ const touching = ref(false)
 const isEditing = ref(false) // 编辑动画状态
 const isWakeActive = ref(false) // 按钮点击激活状态
 const wakeProgress = ref(0) // 按钮进度条
+const isExpanded = ref(false) // 卡片展开状态
 
 const fromCenter = computed(() => Math.min(1, Math.sqrt((py.value - 50) ** 2 + (px.value - 50) ** 2) / 50))
 const fromTop = computed(() => py.value / 100)
@@ -138,6 +148,17 @@ const dotClass = computed(() => {
   if (props.statusText.includes('成功') || props.statusText.includes('完成')) return 'dot--online'
   return 'dot--standby'
 })
+
+// 按钮文本（带进度反馈）
+const wakeButtonText = computed(() => {
+  if (props.isOperating) return 'PROCESSING...'
+  if (wakeProgress.value > 0 && wakeProgress.value < 100) return 'WAKING...'
+  return '一键开机+解锁'
+})
+
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value
+}
 
 function onTouchStart() { touching.value = true }
 function onTouchMove(e: any) {
@@ -455,35 +476,64 @@ function handleWakeClick() {
 .card__content { 
   position: relative; 
   z-index: 2; 
-  padding: 40rpx 36rpx;
+  padding: 32rpx;
   background: transparent;
 }
 
-.card-top { 
-  display: flex; 
-  flex-direction: row; 
-  align-items: center; 
-  margin-bottom: 28rpx;
+/* 卡片头部 */
+.card-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx;
+  margin: -12rpx -12rpx 20rpx -12rpx;
+  border-radius: 20rpx;
+  transition: background 0.2s ease;
+  cursor: pointer;
 }
 
-.card-badge { 
-  display: flex; 
-  flex-direction: row; 
-  align-items: center; 
-  padding: 8rpx 18rpx; 
-  border-radius: 24rpx; 
-  margin-right: 18rpx; 
-  border: 1rpx solid;
-  backdrop-filter: blur(8rpx);
-  -webkit-backdrop-filter: blur(8rpx);
+.card-header:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.power-icon {
+  font-size: 40rpx;
+  color: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 2rpx 8rpx rgba(192, 132, 252, 0.5));
+}
+
+.card-name { 
+  font-size: 36rpx; 
+  font-weight: 700; 
+  color: #FFFFFF; 
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
 
 /* STANDBY - 灰色 */
+.card-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12rpx;
+  border-radius: 50%;
+  border: 2rpx solid;
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
+  transition: all 0.3s ease;
+}
+
 .badge--standby { 
   background: rgba(128, 128, 128, 0.15); 
   border-color: rgba(128, 128, 128, 0.3); 
 }
-.badge--standby .badge-text { color: #B0B0B0; }
 .badge--standby .dot--standby { background-color: #A0A0A0; }
 
 /* WAKING - 亮橙色呼吸灯 */
@@ -492,7 +542,6 @@ function handleWakeClick() {
   border-color: rgba(255, 165, 0, 0.4);
   animation: badgePulse 2s ease-in-out infinite;
 }
-.badge--waking .badge-text { color: #FFB84D; }
 .dot--waking { 
   background: #FFA500; 
   box-shadow: 0 0 14rpx rgba(255, 165, 0, 0.8);
@@ -505,7 +554,6 @@ function handleWakeClick() {
   border-color: rgba(0, 255, 136, 0.3);
   box-shadow: 0 0 20rpx rgba(0, 255, 136, 0.2);
 }
-.badge--online .badge-text { color: #00FF88; }
 .dot--online { 
   background: #00FF88; 
   box-shadow: 0 0 14rpx rgba(0, 255, 136, 0.9);
@@ -534,23 +582,43 @@ function handleWakeClick() {
   }
 }
 
-.badge-dot { width: 12rpx; height: 12rpx; border-radius: 50%; margin-right: 8rpx; transition: all 0.3s ease; }
-.badge-text { font-size: 18rpx; letter-spacing: 2rpx; font-family: 'SF Mono', 'Consolas', monospace; font-weight: 600; }
-.card-name { flex: 1; font-size: 34rpx; font-weight: 700; color: #FFFFFF; text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3); }
+.badge-dot { 
+  width: 16rpx; 
+  height: 16rpx; 
+  border-radius: 50%; 
+  transition: all 0.3s ease; 
+}
 
-/* 胶囊状信息槽位 */
-.card-info {
-  display: flex;
-  flex-direction: column;
+/* 展开区域 */
+.card-expand {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              margin-top 0.4s ease;
+  margin-top: 0;
+}
+
+.card-expand--visible {
+  max-height: 600rpx;
+  opacity: 1;
+  margin-top: 20rpx;
+}
+
+/* 信息网格 */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: 20rpx;
 }
 
 .info-capsule {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 14rpx 20rpx;
+  padding: 12rpx 16rpx;
   background: rgba(0, 0, 0, 0.25);
   border-radius: 16rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.08);
@@ -562,6 +630,18 @@ function handleWakeClick() {
 .info-capsule:active {
   background: rgba(0, 0, 0, 0.35);
   transform: scale(0.98);
+}
+
+/* MAC 胶囊 - 蓝色主题 */
+.info-capsule--mac {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+/* ESP 胶囊 - 紫色主题 */
+.info-capsule--esp {
+  background: rgba(192, 132, 252, 0.15);
+  border-color: rgba(192, 132, 252, 0.25);
 }
 
 .info-icon { 

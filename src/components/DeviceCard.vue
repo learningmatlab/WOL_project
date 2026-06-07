@@ -83,58 +83,12 @@
       </view>
     </view>
 
-    <!-- 卡片背面（编辑表单） -->
+    <!-- 卡片背面（过渡画面） -->
     <view class="card-face card-face--back">
       <view class="back-content">
-        <view class="back-header">
-          <text class="back-title">编辑设备</text>
-          <view class="back-close" @tap="handleBackFromEdit">
-            <text class="close-icon">✕</text>
-          </view>
-        </view>
-        
-        <!-- 设备信息 -->
-        <view class="form-section">
-          <text class="form-section-title">设备信息</text>
-          <view class="form-group">
-            <text class="form-label">设备名称</text>
-            <input class="form-input" v-model="editForm.name" placeholder="如：我的台式机" />
-          </view>
-          <view class="form-group">
-            <text class="form-label">MAC 地址</text>
-            <input class="form-input mono" v-model="editForm.macAddress" placeholder="A1:B2:C3:D4:E5:F6" />
-            <text class="form-hint">目标主机网卡物理地址</text>
-          </view>
-        </view>
-        
-        <!-- 网络配置 -->
-        <view class="form-section">
-          <text class="form-section-title">网络配置</text>
-          <view class="form-group">
-            <text class="form-label">ESP32 IP</text>
-            <input class="form-input mono" v-model="editForm.esp32Ip" placeholder="192.168.1.125" />
-            <text class="form-hint">ESP32-S3 局域网固定地址</text>
-          </view>
-          <view class="form-group">
-            <text class="form-label">安全暗号</text>
-            <input class="form-input mono" v-model="editForm.token" placeholder="与 ESP32 约定的暗号" />
-            <text class="form-hint">局域网验证令牌</text>
-          </view>
-        </view>
-        
-        <!-- 解锁配置 -->
-        <view class="form-section">
-          <text class="form-section-title">解锁配置</text>
-          <view class="form-group form-group--last">
-            <text class="form-label">Windows 密码</text>
-            <input class="form-input" type="safe-password" v-model="editForm.windowsPassword" placeholder="锁屏密码" />
-            <text class="form-hint">ESP32 自动解锁凭证</text>
-          </view>
-        </view>
-        
-        <view class="form-actions">
-          <button class="form-btn form-btn--cancel" @tap="handleBackFromEdit">取消</button>
-          <button class="form-btn form-btn--save" @tap="handleSave">保存修改</button>
+        <view class="back-center">
+          <text class="back-device-name">{{ device.name }}</text>
+          <text class="back-hint">正在进入编辑...</text>
         </view>
       </view>
     </view>
@@ -144,7 +98,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Device } from '../utils/device-store'
-import { updateDevice } from '../utils/device-store'
 
 const props = defineProps<{
   device: Device
@@ -170,26 +123,6 @@ const isExpanded = ref(false) // 卡片展开状态
 const isExpandedFullscreen = ref(false) // 全屏展开状态
 const isFlipped = ref(false) // 卡片翻转状态
 const cardRect = ref<any>(null) // 卡片原始位置信息
-
-// 编辑表单
-const editForm = ref({
-  name: '',
-  macAddress: '',
-  esp32Ip: '',
-  token: 'my_secret_666',
-  windowsPassword: ''
-})
-
-// 初始化编辑表单
-function initEditForm() {
-  editForm.value = {
-    name: props.device.name,
-    macAddress: props.device.macAddress,
-    esp32Ip: props.device.esp32Ip,
-    token: props.device.token || 'my_secret_666',
-    windowsPassword: props.device.windowsPassword || ''
-  }
-}
 
 const fromCenter = computed(() => Math.min(1, Math.sqrt((py.value - 50) ** 2 + (px.value - 50) ** 2) / 50))
 const fromTop = computed(() => py.value / 100)
@@ -286,8 +219,6 @@ async function handleEdit() {
     if (res?.[0]) cardRect.value = res[0]
   })
   
-  initEditForm()
-  
   // 阶段一：翻转
   isFlipped.value = true
   await new Promise(resolve => setTimeout(resolve, 600))
@@ -295,26 +226,16 @@ async function handleEdit() {
   // 阶段二：展开铺满
   isExpandedFullscreen.value = true
   await new Promise(resolve => setTimeout(resolve, 500))
-}
-
-// 从编辑状态返回
-async function handleBackFromEdit() {
-  // 阶段一：收缩
-  isExpandedFullscreen.value = false
-  await new Promise(resolve => setTimeout(resolve, 500))
   
-  // 阶段二：翻转回正面
-  isFlipped.value = false
-  await new Promise(resolve => setTimeout(resolve, 500))
+  // 跳转编辑页面
+  emit('edit', props.device)
   
-  cardRect.value = null
-}
-
-// 保存编辑
-function handleSave() {
-  updateDevice(props.device.id, editForm.value)
-  uni.showToast({ title: '已更新', icon: 'success' })
-  handleBackFromEdit()
+  // 跳转后重置
+  setTimeout(() => {
+    isFlipped.value = false
+    isExpandedFullscreen.value = false
+    cardRect.value = null
+  }, 100)
 }
 
 function handleDelete() {
@@ -987,171 +908,37 @@ function handleWakeClick() {
   background: rgba(255, 107, 157, 0.35);
 }
 
-/* ===== 背面编辑表单 ===== */
+/* ===== 卡片背面 ===== */
 .back-content {
   width: 100%;
-  min-height: 500rpx;
+  min-height: 300rpx;
   flex: 1;
-  padding: 60rpx 40rpx;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   border-radius: 32rpx;
   background: linear-gradient(135deg, rgba(48, 48, 96, 0.85), rgba(32, 32, 64, 0.95));
   backdrop-filter: blur(40rpx) saturate(180%);
   -webkit-backdrop-filter: blur(40rpx) saturate(180%);
-  overflow-y: auto;
 }
 
-.form-section {
-  margin-bottom: 28rpx;
+.back-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
 }
 
-.form-section-title {
-  font-size: 22rpx;
+.back-device-name {
+  font-size: 36rpx;
   font-weight: 700;
-  color: rgba(192, 132, 252, 0.9);
+  color: #FFFFFF;
   letter-spacing: 2rpx;
-  text-transform: uppercase;
-  margin-bottom: 16rpx;
-  padding-bottom: 10rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
-  display: block;
 }
 
-.form-group {
-  margin-bottom: 20rpx;
-}
-
-.form-group--last {
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-/* 头部样式 */
-.back-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30rpx;
-  padding-bottom: 18rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
-}
-
-.back-title {
-  font-size: 34rpx;
-  font-weight: 700;
-  color: #FFFFFF;
+.back-hint {
+  font-size: 22rpx;
+  color: rgba(192, 132, 252, 0.7);
   letter-spacing: 1rpx;
-}
-
-.back-close {
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.back-close:active {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(0.9);
-}
-
-.close-icon {
-  font-size: 28rpx;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-
-.form-label {
-  display: block;
-  font-size: 24rpx;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 10rpx;
-}
-
-.form-hint {
-  display: block;
-  font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.35);
-  margin-top: 8rpx;
-  letter-spacing: 0.5rpx;
-}
-
-.form-input {
-  width: 100%;
-  height: 80rpx;
-  padding: 0 24rpx;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1rpx solid rgba(255, 255, 255, 0.15);
-  border-radius: 16rpx;
-  color: #FFFFFF;
-  font-size: 28rpx;
-  font-family: 'Courier New', monospace;
-  transition: all 0.3s ease;
-}
-
-.form-input.mono {
-  font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
-  letter-spacing: 1rpx;
-}
-
-.form-input:focus {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(192, 132, 252, 0.5);
-  box-shadow: 0 0 0 2rpx rgba(192, 132, 252, 0.2);
-}
-
-.form-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.form-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 40rpx;
-}
-
-.form-btn {
-  flex: 1;
-  height: 88rpx;
-  border-radius: 20rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-  letter-spacing: 1rpx;
-  border: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.form-btn::after {
-  border: none;
-}
-
-.form-btn--cancel {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
-}
-
-.form-btn--cancel:active {
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(0.95);
-}
-
-.form-btn--save {
-  background: linear-gradient(135deg, #FF6B9D 0%, #C084FC 50%, #60A5FA 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4rpx 20rpx rgba(192, 132, 252, 0.4);
-}
-
-.form-btn--save:active {
-  transform: scale(0.95);
-  box-shadow: 0 2rpx 10rpx rgba(192, 132, 252, 0.3);
 }
 </style>

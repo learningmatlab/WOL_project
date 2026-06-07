@@ -355,8 +355,8 @@ function handleWakeClick() {
 
 /* 卡片正面/背面 */
 .card-face {
-  position: absolute;
-  inset: 0;
+  position: relative; /* 改为 relative，让父容器有高度 */
+  min-height: 200rpx; /* 最小高度 */
   backface-visibility: hidden; /* 隐藏背面 */
   border-radius: 32rpx;
   overflow: hidden;
@@ -963,8 +963,8 @@ function handleWakeClick() {
 
 /* ===== 背面编辑表单 ===== */
 .back-content {
-  position: absolute;
-  inset: 0;
+  position: relative; /* 改为 relative */
+  min-height: 600rpx; /* 最小高度 */
   padding: 60rpx 40rpx;
   display: flex;
   flex-direction: column;

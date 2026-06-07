@@ -3,7 +3,6 @@
     class="card"
     :class="{ 
       'card--active': isOperating, 
-      'card--editing': isEditing,
       'card--returning': isReturning,
       'card--expanded': isExpandedFullscreen,
       'card--flipped': isFlipped
@@ -278,7 +277,7 @@ function onTouchMove(e: any) {
 function onTouchEnd() { touching.value = false; px.value = 50; py.value = 50 }
 
 async function handleEdit() {
-  if (isEditing.value) return
+  if (isFlipped.value) return
   
   // 获取卡片位置
   const query = uni.createSelectorQuery()
@@ -290,7 +289,6 @@ async function handleEdit() {
   initEditForm()
   
   // 阶段一：翻转
-  isEditing.value = true
   isFlipped.value = true
   await new Promise(resolve => setTimeout(resolve, 600))
   
@@ -309,8 +307,6 @@ async function handleBackFromEdit() {
   isFlipped.value = false
   await new Promise(resolve => setTimeout(resolve, 500))
   
-  // 重置状态
-  isEditing.value = false
   cardRect.value = null
 }
 

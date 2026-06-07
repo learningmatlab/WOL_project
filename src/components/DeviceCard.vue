@@ -94,24 +94,48 @@
           </view>
         </view>
         
-        <view class="form-group">
-          <text class="form-label">设备名称</text>
-          <input class="form-input" v-model="editForm.name" placeholder="输入设备名称" />
+        <!-- 设备信息 -->
+        <view class="form-section">
+          <text class="form-section-title">设备信息</text>
+          <view class="form-group">
+            <text class="form-label">设备名称</text>
+            <input class="form-input" v-model="editForm.name" placeholder="如：我的台式机" />
+          </view>
+          <view class="form-group">
+            <text class="form-label">MAC 地址</text>
+            <input class="form-input mono" v-model="editForm.macAddress" placeholder="A1:B2:C3:D4:E5:F6" />
+            <text class="form-hint">目标主机网卡物理地址</text>
+          </view>
         </view>
         
-        <view class="form-group">
-          <text class="form-label">MAC 地址</text>
-          <input class="form-input" v-model="editForm.macAddress" placeholder="00:00:00:00:00:00" />
+        <!-- 网络配置 -->
+        <view class="form-section">
+          <text class="form-section-title">网络配置</text>
+          <view class="form-group">
+            <text class="form-label">ESP32 IP</text>
+            <input class="form-input mono" v-model="editForm.esp32Ip" placeholder="192.168.1.125" />
+            <text class="form-hint">ESP32-S3 局域网固定地址</text>
+          </view>
+          <view class="form-group">
+            <text class="form-label">安全暗号</text>
+            <input class="form-input mono" v-model="editForm.token" placeholder="与 ESP32 约定的暗号" />
+            <text class="form-hint">局域网验证令牌</text>
+          </view>
         </view>
         
-        <view class="form-group">
-          <text class="form-label">ESP32 IP</text>
-          <input class="form-input" v-model="editForm.esp32Ip" placeholder="192.168.1.100" />
+        <!-- 解锁配置 -->
+        <view class="form-section">
+          <text class="form-section-title">解锁配置</text>
+          <view class="form-group form-group--last">
+            <text class="form-label">Windows 密码</text>
+            <input class="form-input" type="safe-password" v-model="editForm.windowsPassword" placeholder="锁屏密码" />
+            <text class="form-hint">ESP32 自动解锁凭证</text>
+          </view>
         </view>
         
         <view class="form-actions">
           <button class="form-btn form-btn--cancel" @tap="handleBackFromEdit">取消</button>
-          <button class="form-btn form-btn--save" @tap="handleSave">保存</button>
+          <button class="form-btn form-btn--save" @tap="handleSave">保存修改</button>
         </view>
       </view>
     </view>
@@ -121,6 +145,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Device } from '../utils/device-store'
+import { updateDevice } from '../utils/device-store'
 
 const props = defineProps<{
   device: Device
@@ -151,7 +176,9 @@ const cardRect = ref<any>(null) // 卡片原始位置信息
 const editForm = ref({
   name: '',
   macAddress: '',
-  esp32Ip: ''
+  esp32Ip: '',
+  token: 'my_secret_666',
+  windowsPassword: ''
 })
 
 // 初始化编辑表单
@@ -159,7 +186,9 @@ function initEditForm() {
   editForm.value = {
     name: props.device.name,
     macAddress: props.device.macAddress,
-    esp32Ip: props.device.esp32Ip
+    esp32Ip: props.device.esp32Ip,
+    token: props.device.token || 'my_secret_666',
+    windowsPassword: props.device.windowsPassword || ''
   }
 }
 
@@ -249,60 +278,46 @@ function onTouchMove(e: any) {
 function onTouchEnd() { touching.value = false; px.value = 50; py.value = 50 }
 
 async function handleEdit() {
-  // 如果已经在编辑中，忽略
   if (isEditing.value) return
   
-  // 获取卡片当前位置信息
+  // 获取卡片位置
   const query = uni.createSelectorQuery()
   query.select('.card').boundingClientRect()
   query.exec((res: any) => {
-    if (res?.[0]) {
-      cardRect.value = res[0]
-    }
+    if (res?.[0]) cardRect.value = res[0]
   })
   
-  // 初始化编辑表单
   initEditForm()
   
-  // 阶段一：翻转动画
+  // 阶段一：翻转
   isEditing.value = true
   isFlipped.value = true
-  
-  // 等待翻转完成
   await new Promise(resolve => setTimeout(resolve, 600))
   
   // 阶段二：展开铺满
   isExpandedFullscreen.value = true
-  
-  // 等待展开动画完成
   await new Promise(resolve => setTimeout(resolve, 500))
-  
-  // 触发编辑事件（跳转到编辑页面）
-  emit('edit', props.device)
-  
-  // 跳转后重置状态
-  setTimeout(() => {
-    isEditing.value = false
-    isExpandedFullscreen.value = false
-    isFlipped.value = false
-    cardRect.value = null
-  }, 100)
 }
 
-// 从编辑页面返回
-function handleBackFromEdit() {
+// 从编辑状态返回
+async function handleBackFromEdit() {
+  // 阶段一：收缩
+  isExpandedFullscreen.value = false
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
+  // 阶段二：翻转回正面
   isFlipped.value = false
-  setTimeout(() => {
-    isExpandedFullscreen.value = false
-    isEditing.value = false
-    cardRect.value = null
-  }, 500)
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
+  // 重置状态
+  isEditing.value = false
+  cardRect.value = null
 }
 
 // 保存编辑
 function handleSave() {
-  // TODO: 调用保存 API
-  uni.showToast({ title: '保存成功', icon: 'success' })
+  updateDevice(props.device.id, editForm.value)
+  uni.showToast({ title: '已更新', icon: 'success' })
   handleBackFromEdit()
 }
 
@@ -979,7 +994,7 @@ function handleWakeClick() {
 /* ===== 背面编辑表单 ===== */
 .back-content {
   width: 100%;
-  min-height: 500rpx; /* 撑满背面 */
+  min-height: 500rpx;
   flex: 1;
   padding: 60rpx 40rpx;
   display: flex;
@@ -988,19 +1003,46 @@ function handleWakeClick() {
   background: linear-gradient(135deg, rgba(48, 48, 96, 0.85), rgba(32, 32, 64, 0.95));
   backdrop-filter: blur(40rpx) saturate(180%);
   -webkit-backdrop-filter: blur(40rpx) saturate(180%);
+  overflow-y: auto;
 }
 
+.form-section {
+  margin-bottom: 28rpx;
+}
+
+.form-section-title {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: rgba(192, 132, 252, 0.9);
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
+  margin-bottom: 16rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20rpx;
+}
+
+.form-group--last {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+/* 头部样式 */
 .back-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40rpx;
-  padding-bottom: 20rpx;
+  margin-bottom: 30rpx;
+  padding-bottom: 18rpx;
   border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
 }
 
 .back-title {
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: 700;
   color: #FFFFFF;
   letter-spacing: 1rpx;
@@ -1028,16 +1070,19 @@ function handleWakeClick() {
   font-weight: bold;
 }
 
-.form-group {
-  margin-bottom: 32rpx;
-}
-
 .form-label {
   display: block;
   font-size: 24rpx;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.form-hint {
+  display: block;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 8rpx;
   letter-spacing: 0.5rpx;
 }
 
@@ -1052,6 +1097,11 @@ function handleWakeClick() {
   font-size: 28rpx;
   font-family: 'Courier New', monospace;
   transition: all 0.3s ease;
+}
+
+.form-input.mono {
+  font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+  letter-spacing: 1rpx;
 }
 
 .form-input:focus {

@@ -139,10 +139,7 @@ async function handleWake(device: Device) {
   else { uni.showModal({ title: '操作失败', content: result.message, showCancel: false }) }
 }
 function handleEdit(device: Device) { 
-  // 记录正在编辑的卡片
-  animatingCardId.value = device.id
-  
-  uni.navigateTo({ url: `/pages/add-device/add-device?id=${device.id}` }) 
+  // 编辑在 DeviceCard 内完成（卡片翻转+展开），无需路由跳转
 }
 function handleDelete(device: Device) { deleteDevice(device.id); refreshList(); uni.showToast({ title: '已删除', icon: 'success' }) }
 function handleAdd() { uni.navigateTo({ url: '/pages/add-device/add-device' }) }

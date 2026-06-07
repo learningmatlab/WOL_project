@@ -960,4 +960,135 @@ function handleWakeClick() {
 .act-btn--del:active {
   background: rgba(255, 107, 157, 0.35);
 }
+
+/* ===== 背面编辑表单 ===== */
+.back-content {
+  position: absolute;
+  inset: 0;
+  padding: 60rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(48, 48, 96, 0.85), rgba(32, 32, 64, 0.95));
+  backdrop-filter: blur(40rpx) saturate(180%);
+  -webkit-backdrop-filter: blur(40rpx) saturate(180%);
+}
+
+.back-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.back-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 1rpx;
+}
+
+.back-close {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.back-close:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.9);
+}
+
+.close-icon {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.form-group {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 12rpx;
+  letter-spacing: 0.5rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(192, 132, 252, 0.5);
+  box-shadow: 0 0 0 2rpx rgba(192, 132, 252, 0.2);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.form-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+}
+
+.form-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  border: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.form-btn::after {
+  border: none;
+}
+
+.form-btn--cancel {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.form-btn--cancel:active {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(0.95);
+}
+
+.form-btn--save {
+  background: linear-gradient(135deg, #FF6B9D 0%, #C084FC 50%, #60A5FA 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 20rpx rgba(192, 132, 252, 0.4);
+}
+
+.form-btn--save:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 10rpx rgba(192, 132, 252, 0.3);
+}
 </style>

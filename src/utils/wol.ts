@@ -104,18 +104,49 @@ export function sendUnlockRequest(
 }
 
 /**
- * 一键开机+解锁：先发 WOL 魔术包，再延时请求 ESP32 解锁
+ * 预检测：尝试 ping ESP32，判断电脑是否已开机
+ * @returns true 表示 ESP32 在线（电脑已开机）
+ */
+export function checkEsp32Online(esp32Ip: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    uni.request({
+      url: `http://${esp32Ip}/status`,
+      method: 'GET',
+      timeout: 2000,
+      success() { resolve(true) },
+      fail() { resolve(false) },
+    })
+  })
+}
+
+/**
+ * 一键开机+解锁：先检测电脑状态，已开机则直接解锁，否则先唤醒再解锁
  */
 export async function wakeAndUnlock(
   device: Device,
   onStatusChange: (status: string) => void
 ): Promise<WolResult> {
   try {
-    // 第一步：发送 WOL 魔术包
+    // 预检测：ESP32 是否在线
+    onStatusChange('检测电脑状态...')
+    const isOnline = await checkEsp32Online(device.esp32Ip)
+    
+    if (isOnline) {
+      // 电脑已开机，直接解锁
+      onStatusChange('电脑已开机，正在解锁...')
+      const result = await sendUnlockRequest(
+        device.esp32Ip,
+        device.windowsPassword,
+        device.token,
+        0 // 不需要等待
+      )
+      return result
+    }
+    
+    // 电脑未开机，先唤醒再解锁
     onStatusChange('正在发送开机信号...')
     await sendWolPacket(device.macAddress)
 
-    // 第二步：等待 ESP32 上线并解锁
     onStatusChange('等待解锁挂件上线...')
     const result = await sendUnlockRequest(
       device.esp32Ip,

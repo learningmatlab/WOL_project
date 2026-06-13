@@ -12,6 +12,10 @@ export interface Device {
   token: string
   /** Windows 锁屏密码 */
   windowsPassword: string
+  /** Wi-Fi 名称 */
+  wifiSsid: string
+  /** Wi-Fi 密码 */
+  wifiPassword: string
 }
 
 const STORAGE_KEY = 'WOL_DEVICES'

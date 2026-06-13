@@ -22,25 +22,13 @@
       <view class="section-line"><text class="section-tag">网络配置</text></view>
       <view class="form-card">
         <view class="field">
-          <text class="field-label">Wi-Fi 名称</text>
-          <view class="field-input-box">
-            <input v-model="form.wifiSsid" class="field-input" placeholder="ESP32 连接的 Wi-Fi" placeholder-class="ph" />
-          </view>
-        </view>
-        <view class="field">
-          <text class="field-label">Wi-Fi 密码</text>
-          <view class="field-input-box">
-            <input v-model="form.wifiPassword" class="field-input" type="safe-password" placeholder="Wi-Fi 连接密码" placeholder-class="ph" />
-          </view>
-        </view>
-        <view class="field">
           <text class="field-label">ESP32 IP</text>
           <view class="field-input-box">
             <input v-model="form.esp32Ip" class="field-input mono" placeholder="192.168.1.125" placeholder-class="ph" />
           </view>
           <text class="field-hint">ESP32-S3 局域网固定地址</text>
         </view>
-        <view class="field last">
+        <view class="field">
           <text class="field-label">安全暗号</text>
           <view class="field-input-box">
             <input v-model="form.token" class="field-input mono" placeholder="与 ESP32 约定的暗号" placeholder-class="ph" />
@@ -74,20 +62,19 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { addDevice, getDeviceById, updateDevice } from '../../utils/device-store'
 
-const form = ref({ name: '', macAddress: '', esp32Ip: '', token: 'my_secret_666', wifiSsid: '', wifiPassword: '', windowsPassword: '' })
+const form = ref({ name: '', macAddress: '', esp32Ip: '', token: 'mySecretPassword', windowsPassword: '' })
 const editId = ref('')
 const isEdit = computed(() => !!editId.value)
 const isFormValid = computed(() =>
   form.value.name.trim() !== '' && form.value.macAddress.trim() !== '' &&
   form.value.esp32Ip.trim() !== '' && form.value.token.trim() !== '' &&
-  form.value.wifiSsid.trim() !== '' && form.value.wifiPassword.trim() !== '' &&
   form.value.windowsPassword.trim() !== '')
 
 onLoad((options: any) => {
   if (options?.id) {
     editId.value = options.id
     const device = getDeviceById(options.id)
-    if (device) form.value = { name: device.name, macAddress: device.macAddress, esp32Ip: device.esp32Ip, token: device.token, wifiSsid: device.wifiSsid ?? '', wifiPassword: device.wifiPassword ?? '', windowsPassword: device.windowsPassword }
+    if (device) form.value = { name: device.name, macAddress: device.macAddress, esp32Ip: device.esp32Ip, token: device.token, windowsPassword: device.windowsPassword }
     uni.setNavigationBarTitle({ title: '编辑设备' })
   } else { uni.setNavigationBarTitle({ title: '添加设备' }) }
 })

@@ -264,11 +264,11 @@ function handleAdd() { uni.navigateTo({ url: '/pages/add-device/add-device' }) }
 
 .ecard__edge {
   position: absolute; inset: -2rpx; pointer-events: none; border-radius: 30rpx;
-  background: linear-gradient(135deg, #FF6B9D, #FBBF24, #34D399, #22D3EE, #60A5FA, #C084FC, #FF6B9D);
-  background-size: 300% 300%; z-index: 0; opacity: 0.4;
-  animation: edgeFlow 5s linear infinite;
+  background: linear-gradient(90deg, #FF6B9D, #FBBF24, #34D399, #22D3EE, #60A5FA, #C084FC, #FF6B9D, #FBBF24, #34D399, #22D3EE, #60A5FA, #C084FC, #FF6B9D);
+  background-size: 200% 100%; z-index: 0; opacity: 0.4;
+  animation: edgeFlow 4s linear infinite;
 }
-@keyframes edgeFlow { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+@keyframes edgeFlow { 0% { background-position: 0% 0%; } 100% { background-position: 100% 0%; } }
 
 .ecard__content { position: relative; z-index: 2; padding: 72rpx 40rpx; display: flex; flex-direction: column; align-items: center; }
 .empty-icon { font-size: 80rpx; color: #C084FC; margin-bottom: 24rpx; }

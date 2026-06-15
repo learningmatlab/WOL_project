@@ -71,32 +71,38 @@ export function sendWolPacket(macAddress: string): Promise<WolResult> {
  * @param esp32Ip - ESP32 局域网 IP
  * @param password - Windows 锁屏密码
  * @param token - 安全暗号
- * @param delay - 等待 ESP32 启动的延迟（毫秒），默认 5500ms
+ * @param delay - 等待 ESP32 启动的延迟（毫秒），默认 8000ms
  */
 export function sendUnlockRequest(
   esp32Ip: string,
   password: string,
   token: string,
-  delay: number = 5500
+  delay: number = 8000
 ): Promise<WolResult> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       uni.request({
         url: `http://${esp32Ip}/unlock`,
-        method: 'GET',
+        method: 'POST',
         data: { pwd: password, token },
-        timeout: 5000,
+        header: { 'content-type': 'application/x-www-form-urlencoded' },
+        timeout: 10000,
         success(res: any) {
           if (res.statusCode === 200) {
             resolve({ success: true, message: '解锁成功' })
+          } else if (res.statusCode === 400) {
+            resolve({ success: false, message: '密码不能为空' })
           } else {
-            resolve({ success: false, message: '密码错误或暗号不匹配' })
+            resolve({ success: false, message: `服务器返回 ${res.statusCode}` })
           }
         },
         fail(err: any) {
-          reject(
-            new Error('连接ESP32失败，请确认电脑已开机且开发板已连上Wi-Fi')
-          )
+          const msg = err.errMsg || err.message || ''
+          if (msg.includes('timeout')) {
+            reject(new Error('连接超时, ESP32 可能正在启动中, 请稍后重试'))
+          } else {
+            reject(new Error(`无法连接 ESP32 (${esp32Ip}), 请确认设备在同一局域网`))
+          }
         },
       })
     }, delay)
@@ -112,7 +118,7 @@ export function checkEsp32Online(esp32Ip: string): Promise<boolean> {
     uni.request({
       url: `http://${esp32Ip}/status`,
       method: 'GET',
-      timeout: 2000,
+      timeout: 4000,
       success() { resolve(true) },
       fail() { resolve(false) },
     })

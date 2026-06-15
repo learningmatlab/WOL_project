@@ -26,7 +26,7 @@
           <view class="field-input-box">
             <input v-model="form.esp32Ip" class="field-input mono" placeholder="192.168.1.125" placeholder-class="ph" />
           </view>
-          <text class="field-hint">ESP32-S3 局域网固定地址</text>
+          <text class="field-hint">ESP32-S3 局域网固定地址（查看 ESP32 屏幕确认）</text>
         </view>
         <view class="field">
           <text class="field-label">安全暗号</text>

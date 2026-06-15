@@ -1,12 +1,32 @@
 {
-  "name": "WOL Project",
+  "name": "WOL",
   "appid": "",
-  "description": "A Vue3 uni-app project",
+  "description": "远程唤醒 · 局域网控制",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
   "app-plus": {
-    "usingComponents": true
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.CHANGE_WIFI_MULTICAST_STATE\"/>"
+        ]
+      },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
+  "app-harmony": {
+    "distribute": {
+      "icons": {},
+      "splashScreen": {}
+    }
   },
   "quickapp": {},
   "mp-weixin": {
@@ -26,7 +46,7 @@
     "usingComponents": true
   },
   "h5": {
-    "title": "WOL Project",
+    "title": "WOL",
     "router": {
       "mode": "hash"
     }
